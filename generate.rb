@@ -9,6 +9,20 @@ wordsToConsiderNext = ["Next"]#, ">", "Continue"]
 def cleanHTML(html)
   html.gsub!(/<hr [^\/>]+>/, "<hr \/>")
 
+  #https://sites.psu.edu/symbolcodes/codehtml/#punc
+  html.gsub!(/‘/,"&‌lsquo;")
+  html.gsub!(/’/,"&‌rsquo;")
+  html.gsub!(/“/,"&‌ldquo;")
+  html.gsub!(/”/,"&‌rdquo;")
+  html.gsub!(/—/,"&ndash;")
+  html.gsub!(/—/,"&mdash;")
+  html.gsub!(/•/,"&bull;")
+  html.gsub!(/·/,"&middot;")
+  html.gsub!(/«/,"&laquo;")
+  html.gsub!(/»/,"&raquo;")
+  html.gsub!(/‹/,"&lsaquo;")
+  html.gsub!(/›/,"&rsaquo;")
+
   return html
 end
 
@@ -82,8 +96,8 @@ urls = [
 urlsToStoreAndCheckNextTime = []
 
 #filename is the date and time
-dateForFilename = Time.new.strftime("%Y-%m-%d_%H-%M-%S")
-dateForTitle = Time.new.strftime("%m-%d_%H-%M")
+dateForFilename = Time.new.strftime("%m-%d_%H-%M")
+dateForTitle = Time.new.strftime("%m/%d %H:%M")
 
 book = GEPUB::Book.new
 book.primary_identifier('http://gregschwartz.net', dateForFilename, 'URL')
@@ -154,8 +168,8 @@ book.ordered do
         links = page.links #because Mechanize SUCKS and cannot narrow down links further, argh
         links.each do |link|
           #see if any of the wordsToConsiderNext appear in the link text
-          if wordsToConsiderNext.select{|word| link.text.downcase.match(word)}.length > 0
-            #puts "\tNext link: #{link.href}"
+          if wordsToConsiderNext.select{|word| link.text.downcase.match(word)}.length > 0 && link.text != "The Next Best Hero" #specific badly named link
+            puts "\tNext link: #{link.href}"
             nextLink = link
             break
           end
@@ -163,7 +177,7 @@ book.ordered do
         break unless nextLink
 
         chapterNumber += 1
-        sleep(rand(2))
+        sleep(rand(4))
 
         #testing
         break if chapterNumber > 30
@@ -188,6 +202,6 @@ end #book.ordered
 File.open(URL_STORAGE,"w") { |f| f.write(urlsToStoreAndCheckNextTime.to_json) }
 
 #Output epub
-epubname = File.join(File.dirname(__FILE__), dateForFilename + ".epub")
+epubname = File.join(File.dirname(__FILE__), "Stories " + dateForFilename + ".epub")
 book.generate_epub(epubname)
 puts "epub exported!"
