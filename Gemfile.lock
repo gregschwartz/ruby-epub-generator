@@ -1,0 +1,21 @@
+GEM
+  remote: http://rubygems.org/
+  specs:
+    epubber (0.2.0)
+      liquid (~> 3.0)
+      nokogiri (~> 1.6)
+      rubyzip (>= 1.0.0)
+    liquid (3.0.6)
+    nokogiri (1.13.9-arm64-darwin)
+      racc (~> 1.4)
+    racc (1.6.0)
+    rubyzip (2.3.2)
+
+PLATFORMS
+  arm64-darwin-22
+
+DEPENDENCIES
+  epubber
+
+BUNDLED WITH
+   2.3.7
