@@ -8,20 +8,34 @@ wordsToConsiderNext = ["Next"]#, ">", "Continue"]
 
 def cleanHTML(html)
   html.gsub!(/<hr [^\/>]+>/, "<hr \/>")
+  html.gsub!(/<br [^\/>].>/, "<br \/>")
+  html.gsub!(/<br>/, "<br \/>")
+  html.gsub!(/,/,',')
+  html.gsub!(/…/,'&#8230;')
+  html.gsub!(/★/,'&#9733;')
 
-  #https://sites.psu.edu/symbolcodes/codehtml/#punc
-  html.gsub!(/‘/,"&‌lsquo;")
-  html.gsub!(/’/,"&‌rsquo;")
-  html.gsub!(/“/,"&‌ldquo;")
-  html.gsub!(/”/,"&‌rdquo;")
-  html.gsub!(/—/,"&ndash;")
-  html.gsub!(/—/,"&mdash;")
-  html.gsub!(/•/,"&bull;")
-  html.gsub!(/·/,"&middot;")
-  html.gsub!(/«/,"&laquo;")
-  html.gsub!(/»/,"&raquo;")
-  html.gsub!(/‹/,"&lsaquo;")
-  html.gsub!(/›/,"&rsaquo;")
+  html.gsub!(/‘/,'&apos;')
+  html.gsub!(/’/,'&apos;')
+  html.gsub!(/“/,'&quot;')
+  html.gsub!(/”/,'&quot;')
+  html.gsub!(/—/,'&#8212;')
+  html.gsub!(/—/,'&#8212;')
+  html.gsub!(/•/,'&#8226;')
+  html.gsub!(/·/,'&#8901;')
+  html.gsub!(/•/,'&#8226;')
+  html.gsub!(/◦/,'&#9702;')
+  html.gsub!(/∙/,'&#8729;')
+  html.gsub!(/‣/,'&#8227;')
+  html.gsub!(/⁃/,'&#8259;')
+  html.gsub!(/°/,'&#176;')
+  html.gsub!(/∞/,'&#8734;')
+  html.gsub!(/™/,'&#8482;')
+  html.gsub!(/©/,'&#169;')
+
+  html.gsub!(/«/,'&laquo;')
+  html.gsub!(/»/,'&raquo;')
+  html.gsub!(/‹/,'&lsaquo;')
+  html.gsub!(/›/,'&rsaquo;')
 
   return html
 end
@@ -88,29 +102,42 @@ urls = [
   #not on reddit, but try
   #"https://theyaresmol.com/smolive-garden-chapter-16-the-absolute-and-most-correct-choice/",
 
-  # "https://www.reddit.com/r/redditserials/comments/n1duqa/leveling_up_the_world_adventure_arc_chapter_119/", #huge series
+  #huge series
+  # "https://www.reddit.com/r/redditserials/comments/n1duqa/leveling_up_the_world_adventure_arc_chapter_119/",
+
+  #only for testing "no next link"
+  # "https://www.reddit.com/r/HFY/comments/z37kbd/the_great_erectus_and_faun_romance/", #last one, no next link
+
+  #just testing
+  # "https://www.reddit.com/r/HFY/comments/z37kbd/the_great_erectus_and_faun_romance/",
+  # "https://www.reddit.com/r/HFY/comments/xyu1ak/dungeon_tour_guide_ch_29/"
 ]
+
+#not working because the next link is in the fucking comments as PART [n+1], can I simply compare them and take the maximal one? e.g. if current=2, prev="Part 1" next="Part 3"
+#https://www.reddit.com/r/HFY/comments/yo2eit/bone_music_chapter_one/
+#https://www.reddit.com/r/HFY/comments/ynuook/we_need_a_deathworlder_pt51/
+# https://www.reddit.com/r/HFY/comments/y6r3mo/by_the_book/
+# https://www.reddit.com/r/HFY/comments/zb40ro/a_broken_machine/
+
+#probably can't figure out how to recognize this silly next structure
+# "https://www.reddit.com/r/HFY/comments/ynwoiw/those_who_walk_the_earth_pt_1_of_2/"
+# "https://www.reddit.com/r/HFY/comments/yp7csr/those_who_walk_the_earth_pt_2_of_2/"
+
 
 ###########
 
 urlsToStoreAndCheckNextTime = []
 
 #filename is the date and time
-dateForFilename = Time.new.strftime("%m-%d_%H-%M")
+dateForFilename = Time.new.strftime("%m-%d-%H-%M")
 dateForTitle = Time.new.strftime("%m/%d %H:%M")
 
 book = GEPUB::Book.new
 book.primary_identifier('http://gregschwartz.net', dateForFilename, 'URL')
 book.language = 'en'
-
-book.add_title "Subscriptions #{dateForTitle}",
-               title_type: GEPUB::TITLE_TYPE::MAIN,
-               lang: 'en',
-               file_as: "Greg's Subscriptions",
-               display_seq: 1
-
+book.add_title("Subscriptions #{dateForTitle}", title_type: GEPUB::TITLE_TYPE::MAIN, lang: 'en', file_as: "Greg's Subscriptions", display_seq: 1)
 book.add_creator 'Greg',
-                 display_seq:1
+                  display_seq: 1
 
 #make sure the words are lowercase
 wordsToConsiderNext.map!{|w| w.downcase}
@@ -119,8 +146,6 @@ wordsToConsiderNext.map!{|w| w.downcase}
 a = Mechanize.new { |agent|
   agent.user_agent_alias = 'Mac Safari'
 }
-
-
 
 #add items
 book.ordered do
@@ -139,7 +164,7 @@ book.ordered do
   seriesNumber = 0
   urls.each do |url|
     #normally the stored URL was the last one we read, so we don't want to include it
-    addToExport = isFirstTimeRunning #false
+    addToExport = true #false
     ###### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ###### TODO: remove isFirstTimeRunning and overriding urls !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ###### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -150,7 +175,7 @@ book.ordered do
     chapterNumber = 1
     a.get(url) do |page|
       loop do #loop to iterate on this URL and "next" pages
-        puts "Page: #{page.uri}"
+        puts "\tPage: #{page.uri}"
 
         if (addToExport)
           title = page.title
@@ -160,7 +185,7 @@ book.ordered do
 
           book.add_item("text/s#{seriesNumber}/ch#{chapterNumber}.xhtml").add_content(StringIO.new(contentWrapped)).toc_text(title).landmark(type: "bodymatter", title: title)
 
-          puts "\tAdded as chapter (#{content.length} chars)"
+          puts "\t\tAdded as chapter (#{content.length} chars)"
         end
 
         #### Look for link to next story in series
@@ -169,7 +194,7 @@ book.ordered do
         links.each do |link|
           #see if any of the wordsToConsiderNext appear in the link text
           if wordsToConsiderNext.select{|word| link.text.downcase.match(word)}.length > 0 && link.text != "The Next Best Hero" #specific badly named link
-            puts "\tNext link: #{link.href}"
+            #puts "\tNext link: #{link.href}"
             nextLink = link
             break
           end
@@ -177,7 +202,7 @@ book.ordered do
         break unless nextLink
 
         chapterNumber += 1
-        sleep(rand(4))
+        sleep(1 + rand(3))
 
         #testing
         break if chapterNumber > 30
@@ -191,7 +216,7 @@ book.ordered do
 
       #store current URL as the one to start with next time
       urlsToStoreAndCheckNextTime.push(page.uri)
-      puts "\tSaved URL for next time: #{page.uri}"
+      # puts "\tSaved URL for next time: #{page.uri}"
 
       seriesNumber += 1
     end #a.get(url)
@@ -204,4 +229,4 @@ File.open(URL_STORAGE,"w") { |f| f.write(urlsToStoreAndCheckNextTime.to_json) }
 #Output epub
 epubname = File.join(File.dirname(__FILE__), "Stories " + dateForFilename + ".epub")
 book.generate_epub(epubname)
-puts "epub exported!"
+puts "✅ ePub exported!\n"
