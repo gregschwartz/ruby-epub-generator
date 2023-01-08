@@ -3,42 +3,12 @@ require 'json'
 require 'mechanize'
 require 'gepub'
 
+require_relative 'cleanHtml.rb'
+
+MINIMUM_TIME_BETWEEN_REQUESTS = 5
 URL_STORAGE = "urls.json"
 wordsToConsiderNext = ["Next"]#, ">", "Continue"]
 
-def cleanHTML(html)
-  html.gsub!(/<hr [^\/>]+>/, "<hr \/>")
-  html.gsub!(/<br [^\/>].>/, "<br \/>")
-  html.gsub!(/<br>/, "<br \/>")
-  html.gsub!(/,/,',')
-  html.gsub!(/…/,'&#8230;')
-  html.gsub!(/★/,'&#9733;')
-
-  html.gsub!(/‘/,'&apos;')
-  html.gsub!(/’/,'&apos;')
-  html.gsub!(/“/,'&quot;')
-  html.gsub!(/”/,'&quot;')
-  html.gsub!(/—/,'&#8212;')
-  html.gsub!(/—/,'&#8212;')
-  html.gsub!(/•/,'&#8226;')
-  html.gsub!(/·/,'&#8901;')
-  html.gsub!(/•/,'&#8226;')
-  html.gsub!(/◦/,'&#9702;')
-  html.gsub!(/∙/,'&#8729;')
-  html.gsub!(/‣/,'&#8227;')
-  html.gsub!(/⁃/,'&#8259;')
-  html.gsub!(/°/,'&#176;')
-  html.gsub!(/∞/,'&#8734;')
-  html.gsub!(/™/,'&#8482;')
-  html.gsub!(/©/,'&#169;')
-
-  html.gsub!(/«/,'&laquo;')
-  html.gsub!(/»/,'&raquo;')
-  html.gsub!(/‹/,'&lsaquo;')
-  html.gsub!(/›/,'&rsaquo;')
-
-  return html
-end
 
 ##### Load stored URLs from last time
 begin
@@ -73,8 +43,7 @@ unless urls && urls.length > 0
 end
 
 
-#### Overrides
-isFirstTimeRunning = true
+#### Override the URLs
 urls = [
   # "https://www.reddit.com/r/HFY/comments/z37kbd/the_great_erectus_and_faun_romance/", #last one, no next link
 
@@ -166,7 +135,7 @@ book.ordered do
     #normally the stored URL was the last one we read, so we don't want to include it
     addToExport = true #false
     ###### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ###### TODO: remove isFirstTimeRunning and overriding urls !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ###### TODO: set this to false and remove overriding urls !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ###### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -202,7 +171,7 @@ book.ordered do
         break unless nextLink
 
         chapterNumber += 1
-        sleep(1 + rand(3))
+        sleep(MINIMUM_TIME_BETWEEN_REQUESTS + rand(3))
 
         #testing
         break if chapterNumber > 30
